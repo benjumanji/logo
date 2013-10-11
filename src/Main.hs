@@ -14,7 +14,7 @@ instance Functor PrimLogoF where
     fmap _ End = End
 
 instance Functor SugarLogoF where
-    fmap f (Repeat n rs) = Repeat n $ fmap f rs
+    fmap f (Repeat n r) = Repeat n $ f r
 
 type PrimLogo = Fix PrimLogoF
 type SugarLogo = Fix PrimLogoF
@@ -33,12 +33,24 @@ type Algebra f a = f a -> a
 cata :: Functor f => Algebra f a -> Fix f -> a
 cata f = f . fmap (cata f) . out
 
+{-
+
 unroll :: Logo -> PrimLogo
 unroll (In (InL (FD x is))) = In $ FD x (unroll is)
 unroll (In (InL (RT x is))) = In $ RT x (unroll is)
 unroll (In (InL (End)))     = In $ End
 unroll (In (InR (Repeat n is))) = In $ End
 
+-}
+
+unroll :: LogoF PrimLogo -> PrimLogo                     
+unroll (InL x) = In x
+unroll (InR _) = In $ End
+
+render :: Algebra PrimLogoF String
+render (FD x tail) = "FD " ++ show x ++ " " ++ tail
+render (RT x tail) = "RT " ++ show x ++ " " ++ tail
+render (End) = "End"
 
 -- Smart Constructors
 fd :: Int -> Logo -> Logo
@@ -53,9 +65,11 @@ end = In . InL $ End
 prog :: Logo
 prog = fd 10 (rt 90 end)
 
+x :: PrimLogo
+x = cata unroll prog 
 
 main :: IO ()
-main = putStrLn "test"
+main = putStrLn $ cata render x
 
 
 
