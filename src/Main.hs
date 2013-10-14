@@ -6,7 +6,7 @@ module Main
 data Fix f = In { out :: f (Fix f) }
 
 data PrimLogoF r = FD Int r | RT Int r | End
-data SugarLogoF r = Repeat Int r
+data SugarLogoF r = Repeat Int r r
 
 instance Functor PrimLogoF where
     fmap f (FD x r) = FD x $ f r
@@ -14,7 +14,7 @@ instance Functor PrimLogoF where
     fmap _ End = End
 
 instance Functor SugarLogoF where
-    fmap f (Repeat n r) = Repeat n $ f r
+    fmap f (Repeat n is tail) = Repeat n (f is) (f tail)
 
 type PrimLogo = Fix PrimLogoF
 type SugarLogo = Fix PrimLogoF
@@ -44,8 +44,14 @@ unroll (In (InR (Repeat n is))) = In $ End
 -}
 
 unroll :: LogoF PrimLogo -> PrimLogo                     
-unroll (InL x) = In x
-unroll (InR _) = In $ End
+unroll (InL x) = In x 
+unroll (InR (Repeat n is tail)) = iterate (is `lappend`) tail !! n
+
+lappend :: PrimLogo -> PrimLogo -> PrimLogo
+lappend (In End) ys = ys
+lappend (In (FD x tail)) ys = In $ FD x (tail `lappend` ys)
+lappend (In (RT x tail)) ys = In $ RT x (tail `lappend` ys)
+
 
 render :: Algebra PrimLogoF String
 render (FD x tail) = "FD " ++ show x ++ " " ++ tail
@@ -62,8 +68,11 @@ rt ang tail = (In . InL) $ RT ang tail
 end :: Logo
 end = In . InL $ End
 
+repeatl :: Int -> Logo -> Logo -> Logo
+repeatl n is tail = In . InR $ Repeat n is tail
+
 prog :: Logo
-prog = fd 10 (rt 90 end)
+prog = fd 10 (repeatl 10 (fd 10 end) (rt 90 end))
 
 x :: PrimLogo
 x = cata unroll prog 
