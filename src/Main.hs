@@ -33,16 +33,6 @@ type Algebra f a = f a -> a
 cata :: Functor f => Algebra f a -> Fix f -> a
 cata f = f . fmap (cata f) . out
 
-{-
-
-unroll :: Logo -> PrimLogo
-unroll (In (InL (FD x is))) = In $ FD x (unroll is)
-unroll (In (InL (RT x is))) = In $ RT x (unroll is)
-unroll (In (InL (End)))     = In $ End
-unroll (In (InR (Repeat n is))) = In $ End
-
--}
-
 unroll :: LogoF PrimLogo -> PrimLogo                     
 unroll (InL x) = In x 
 unroll (InR (Repeat n is tail)) = iterate (is `lappend`) tail !! n
